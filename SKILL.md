@@ -44,6 +44,9 @@ Expected result:
 
 Verification:
 <tests, commands, or checks to run>
+
+Completion:
+<what the subagent must report after its work and verification are finished>
 ```
 
 Do not include unrelated chat history. State repository conventions, ownership boundaries, and prohibited changes when relevant.
@@ -76,9 +79,19 @@ spawn_agent(
 
 If the tool schema lacks a required override or the spawn fails, do not retry as an inherited or Sol subagent and do not silently fall back to a full-history fork. Tell the user Luna Max delegation did not occur, then let Sol take over or request direction when needed.
 
+## Wait for Delegated Work
+
+Every delegated task is joined work, not fire-and-forget background work. Record each spawned task name or agent identifier and wait for every agent required by the current request to reach a terminal state before reviewing, integrating, or sending the final response.
+
+Use the live collaboration tool schema. When `wait_agent` is available, call it with a long bounded timeout and keep waiting until the required agent completes or needs attention. A timeout is only a progress checkpoint; it is not completion. If an agent is still running after a timeout, give the user a concise progress update when appropriate and wait again. Do not declare the parent task complete while required subagent output is pending.
+
+If the subagent requests clarification or reports a recoverable problem, respond with `followup_task` or the appropriate messaging tool, then resume waiting. If the user cancels or replaces the work, explicitly interrupt the affected agent when the tool supports it rather than leaving it running.
+
+Immediately before the final response, use `list_agents` or the available status tool to confirm that no agent spawned for the current request remains `running`. Never send the final response while a required child is active, and never allow its result to arrive after the parent has reported completion.
+
 ## Review and Integrate
 
-Do not duplicate Luna's implementation while it is working. After it finishes, Sol must inspect the actual changes and verify at least:
+Do not duplicate Luna's implementation while it is working. Sol may prepare non-overlapping review context while waiting, but review of Luna's result begins only after Luna reaches a terminal state. After it finishes, Sol must inspect the actual changes and verify at least:
 
 - The result satisfies the original request and expected behavior.
 - Changes follow repository conventions and contain no unnecessary edits.
