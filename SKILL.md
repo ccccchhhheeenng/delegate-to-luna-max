@@ -1,15 +1,21 @@
 ---
 name: delegate-to-luna-max
-description: Orchestrate repository work with GPT-5.6 Sol at medium reasoning and delegate bounded implementation, test-writing, debugging, refactoring, documentation, or focused investigation tasks to GPT-5.6 Luna at max reasoning. Use proactively when a self-contained subtask has clear success criteria and delegation costs less than doing the full implementation locally; skip trivial edits, unclear work, broad architecture, and high-risk design decisions.
+description: Use for any non-trivial repository task containing bounded implementation, test-writing, debugging, refactoring, documentation, or focused investigation. Orchestrate with GPT-5.6 Sol at medium reasoning; delegate suitable work to GPT-5.6 Luna at max reasoning with compact context, wait for every required result, then review. Skip trivial, ambiguous, tightly coupled, architecture-wide, and high-risk work.
 ---
 
 # Delegate to Luna Max
 
 Use `gpt-5.6-sol` with `reasoning_effort=medium` as the orchestrator. The orchestrator understands the full request and repository architecture, decomposes work, prepares compact context, reviews and integrates changes, owns high-risk decisions, and performs final verification. This skill guides delegation; it cannot silently change the active parent model. If the active orchestrator is not Sol Medium and that distinction matters, disclose the mismatch instead of claiming this routing is active.
 
+## Discovery and Always-On Use
+
+Implicit skill invocation is heuristic: a clear description improves selection but does not guarantee this file loads for every task. Keep `policy.allow_implicit_invocation: true` in `agents/openai.yaml`. When the user wants this workflow considered in every new Codex run, add a short global `$CODEX_HOME/AGENTS.md` instruction that tells Codex to read this `SKILL.md` before non-trivial repository work. Keep the full workflow here rather than duplicating it in `AGENTS.md`.
+
 ## Decide Whether to Delegate
 
 Delegate only when the implementation or investigation is independent, bounded, and has observable success criteria, and when coordination costs less than completing it directly. Do not spawn a subagent merely to exercise this skill. Handle a change that takes only a few seconds directly.
+
+Keep this workflow one level deep: Luna must not spawn another subagent unless the user explicitly requests nested delegation. Prefer one implementation agent. Use multiple writing agents only when their file ownership is disjoint and stated in each task brief. Sequence dependent tasks and work that touches the same files.
 
 Good Luna Max tasks include:
 
@@ -81,11 +87,13 @@ If the tool schema lacks a required override or the spawn fails, do not retry as
 
 ## Wait for Delegated Work
 
-Every delegated task is joined work, not fire-and-forget background work. Record each spawned task name or agent identifier and wait for every agent required by the current request to reach a terminal state before reviewing, integrating, or sending the final response.
+Every delegated task is joined work, not fire-and-forget background work. Record each spawned task name or agent identifier and whether its result is required. Wait for every required agent to reach a terminal state before reviewing, integrating, or sending the final response.
 
-Use the live collaboration tool schema. When `wait_agent` is available, call it with a long bounded timeout and keep waiting until the required agent completes or needs attention. A timeout is only a progress checkpoint; it is not completion. If an agent is still running after a timeout, give the user a concise progress update when appropriate and wait again. Do not declare the parent task complete while required subagent output is pending.
+Use the live collaboration tool schema. When `wait_agent` is available, call it with a long bounded timeout and keep waiting until the required agent completes or needs attention. A wait may wake for only one agent or one mailbox event. After every wake, check the recorded agents with `list_agents`, collect completed results, and wait again while any required agent remains active. A timeout is only a progress checkpoint; it is not completion. If an agent is still running after a timeout, give the user a concise progress update when appropriate and wait again. Do not declare the parent task complete while required subagent output is pending.
 
-If the subagent requests clarification or reports a recoverable problem, respond with `followup_task` or the appropriate messaging tool, then resume waiting. If the user cancels or replaces the work, explicitly interrupt the affected agent when the tool supports it rather than leaving it running.
+If the subagent requests clarification or reports a recoverable problem, respond with `followup_task` or the appropriate messaging tool, then resume waiting. New user input may end a wait early; answer or incorporate it, then resume waiting unless the user cancels, replaces, or explicitly detaches the delegated work. If the user cancels or replaces the work, explicitly interrupt the affected agent when the tool supports it rather than leaving it running.
+
+Do not wait forever without evidence of progress. Define a proportionate stopping condition from task size. After repeated unchanged timeouts, inspect status, send one focused follow-up when useful, then interrupt the agent and let Sol take over if it remains stuck. Reuse a completed or idle Luna with `followup_task` for a small correction when appropriate instead of spawning unnecessary replacement agents.
 
 Immediately before the final response, use `list_agents` or the available status tool to confirm that no agent spawned for the current request remains `running`. Never send the final response while a required child is active, and never allow its result to arrive after the parent has reported completion.
 
