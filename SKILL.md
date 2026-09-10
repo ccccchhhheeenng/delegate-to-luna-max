@@ -5,7 +5,7 @@ description: Use for any non-trivial repository task containing bounded implemen
 
 # Delegate to Luna Max
 
-Use `gpt-5.6-sol` with `reasoning_effort=medium` as the orchestrator. The orchestrator understands the full request and repository architecture, decomposes work, prepares compact context, reviews and integrates changes, owns high-risk decisions, and performs final verification. This skill guides delegation; it cannot silently change the active parent model. If the active orchestrator is not Sol Medium and that distinction matters, disclose the mismatch instead of claiming this routing is active.
+Use `gpt-5.6-sol` with `reasoning_effort=medium` as the orchestrator. Sol owns decomposition, high-risk decisions, integration, and final verification. This skill guides delegation; it cannot silently change the active parent model. If the active orchestrator is not Sol Medium and that distinction matters, disclose the mismatch instead of claiming this routing is active.
 
 ## Discovery and Always-On Use
 
@@ -13,53 +13,66 @@ Implicit skill invocation is heuristic: a clear description improves selection b
 
 ## Decide Whether to Delegate
 
-Delegate only when the implementation or investigation is independent, bounded, and has observable success criteria, and when coordination costs less than completing it directly. Do not spawn a subagent merely to exercise this skill. Handle a change that takes only a few seconds directly.
+Delegate only independent, bounded work with observable success criteria when coordination costs less than doing it directly. Handle trivial, ambiguous, tightly coupled, architecture-wide, security-critical, or high-risk work in Sol. Keep the workflow one level deep; Luna must not spawn another subagent unless the user explicitly requests nested delegation.
 
-Keep this workflow one level deep: Luna must not spawn another subagent unless the user explicitly requests nested delegation. Prefer one implementation agent. Use multiple writing agents only when their file ownership is disjoint and stated in each task brief. Sequence dependent tasks and work that touches the same files.
+Plan small successive waves. Each child gets one primary deliverable, an explicit scope, and a required or optional result label. A wave may contain up to three Luna Max agents, but use fewer when there are fewer truly independent tasks, when sequencing is safer, or when fewer child slots are available. Never spawn three merely to fill capacity. Compute the wave size from the independent task count and available child slots (the configured child-slot limit excludes Sol), capped at three. If capacity is below three, degrade to the available capacity and explicitly report that limitation; never claim that three agents ran.
 
-Good Luna Max tasks include:
-
-- Implementing one well-specified function, class, endpoint, or config option.
-- Writing or extending unit and edge-case tests.
-- Making small or medium changes across one or a few files using an established pattern.
-- Performing repetitive refactors or mechanical transformations.
-- Tracing an error, analyzing logs, or searching for a specific symbol or API usage.
-- Fixing a common bug or updating focused documentation and comments.
-
-Keep broad architecture redesigns, security-critical decisions, database migration strategy, ambiguous requirements, cross-subsystem debugging with high uncertainty, and work that depends on extensive implicit product context with Sol.
+Parallel writing is allowed only with explicitly disjoint file ownership in every brief. Tasks that depend on one another, touch the same file, or require a shared mutable artifact run sequentially. Do not ask a child to gather unrelated repository context or perform a broad scan. Suitable tasks include a well-specified function/config option, focused tests, a mechanical refactor, a targeted symbol/API investigation, or focused documentation.
 
 ## Build a Compact Task Brief
 
-Understand the full context first, then send only the minimum necessary context. Prefer summarizing context in the message over increasing `fork_turns`. Include:
+Sol reads enough authoritative context to define the boundaries, then sends only the minimum context needed. Use exact paths rather than a repository-wide directory when possible. Every brief must contain all of these fields:
 
 ```text
 Goal:
-<what to implement>
+<one primary deliverable>
 
 Relevant files:
-<files or directories>
+<exact files or narrowly scoped directories>
 
 Context:
 <minimum architecture context required>
 
-Constraints:
-<things that must not change>
+Allowed reads:
+<exact paths, commands, or data sources>
+
+Allowed writes:
+<exact files this child owns, or "none" for read-only work>
+
+Do not:
+<files, systems, actions, or scope that are prohibited>
+
+Scope expansion gate:
+If the work needs anything outside Allowed reads or Allowed writes, stop and return BLOCKED with the missing scope and reason. Do not explore, infer permission, or modify beyond scope.
+
+File ownership:
+<exclusive write ownership; state "read-only" when applicable>
 
 Expected result:
-<observable behavior>
+<observable behavior or findings>
 
 Verification:
 <tests, commands, or checks to run>
 
-Completion:
-<what the subagent must report after its work and verification are finished>
+Result priority:
+REQUIRED | OPTIONAL
 ```
 
-Do not include unrelated chat history. State repository conventions, ownership boundaries, and prohibited changes when relevant.
+Do not include unrelated chat history. A child must return only this fixed contract after its work and checks (use `none` when a field is empty):
+
+```text
+Status: DONE | BLOCKED | FAILED
+Changed files: <paths or none>
+Behavior implemented or Findings: <summary>
+Tests/checks run: <commands and outcomes>
+Assumptions: <assumptions or none>
+Unresolved issues: <issues or none>
+Evidence: <paths, commands, outputs, or hashes>
+```
 
 ## Spawn Luna Max Correctly
 
-Inspect the current `spawn_agent` tool schema and use its exact supported parameter names. For Luna delegation, explicitly set:
+Inspect the live `spawn_agent` schema and use its exact parameter names. For every Luna delegation, explicitly set:
 
 ```text
 fork_turns="none"
@@ -67,58 +80,24 @@ model="gpt-5.6-luna"
 reasoning_effort="max"
 ```
 
-Never omit `fork_turns` and never use `fork_turns="all"` for Luna delegation. Full-history forks inherit the parent model and reasoning effort and do not accept model or reasoning overrides.
+Never omit `fork_turns` and never use `fork_turns="all"`. Use `fork_turns="none"` for Luna by default. A limited positive integer string such as `"1"`, `"2"`, or `"3"` is allowed only when a specific small amount of recent context is genuinely necessary and cannot be expressed cleanly in the compact brief. A parallel writer must receive a non-overlapping ownership list. If a required override is unavailable or spawning fails, do not retry with an inherited or Sol subagent or a full-history fork; disclose that Luna Max delegation did not occur and let Sol take over.
 
-Use a limited positive integer string such as `"1"`, `"2"`, or `"3"` only when inheriting that small amount of recent context is necessary. Compact the context into the task brief whenever possible.
+## Wait for Waves
 
-Conceptual call shape, subject to the live tool schema:
+Every spawned child is joined work, not fire-and-forget. Record its task identifier and whether the result is REQUIRED or OPTIONAL. Sol must not implement overlapping work while any child in that scope is running. Wait for every REQUIRED result to reach a terminal state before reviewing, integrating, starting a dependent wave, or sending the final response. OPTIONAL work never silently becomes required; if it is not needed, cancel or drop it explicitly and ensure no child remains running before finalizing.
 
-```text
-spawn_agent(
-    task_name="<concise_task_name>",
-    fork_turns="none",
-    model="gpt-5.6-luna",
-    reasoning_effort="max",
-    message="<self-contained task brief>"
-)
-```
-
-If the tool schema lacks a required override or the spawn fails, do not retry as an inherited or Sol subagent and do not silently fall back to a full-history fork. Tell the user Luna Max delegation did not occur, then let Sol take over or request direction when needed.
-
-## Wait for Delegated Work
-
-Every delegated task is joined work, not fire-and-forget background work. Record each spawned task name or agent identifier and whether its result is required. Wait for every required agent to reach a terminal state before reviewing, integrating, or sending the final response.
-
-Use the live collaboration tool schema. When `wait_agent` is available, call it with a long bounded timeout and keep waiting until the required agent completes or needs attention. A wait may wake for only one agent or one mailbox event. After every wake, check the recorded agents with `list_agents`, collect completed results, and wait again while any required agent remains active. A timeout is only a progress checkpoint; it is not completion. If an agent is still running after a timeout, give the user a concise progress update when appropriate and wait again. Do not declare the parent task complete while required subagent output is pending.
-
-If the subagent requests clarification or reports a recoverable problem, respond with `followup_task` or the appropriate messaging tool, then resume waiting. New user input may end a wait early; answer or incorporate it, then resume waiting unless the user cancels, replaces, or explicitly detaches the delegated work. If the user cancels or replaces the work, explicitly interrupt the affected agent when the tool supports it rather than leaving it running.
-
-Do not wait forever without evidence of progress. Define a proportionate stopping condition from task size. After repeated unchanged timeouts, inspect status, send one focused follow-up when useful, then interrupt the agent and let Sol take over if it remains stuck. Reuse a completed or idle Luna with `followup_task` for a small correction when appropriate instead of spawning unnecessary replacement agents.
-
-Immediately before the final response, use `list_agents` or the available status tool to confirm that no agent spawned for the current request remains `running`. Never send the final response while a required child is active, and never allow its result to arrive after the parent has reported completion.
+Use the live collaboration status/wait tools. A timeout is only a progress checkpoint: inspect status and continue waiting while a required child is active. If a child requests clarification, reports a recoverable issue, or reaches BLOCKED, send a focused follow-up only within the original scope; otherwise let Sol take over. If the user cancels or replaces the work, interrupt affected children when supported.
 
 ## Review and Integrate
 
-Do not duplicate Luna's implementation while it is working. Sol may prepare non-overlapping review context while waiting, but review of Luna's result begins only after Luna reaches a terminal state. After it finishes, Sol must inspect the actual changes and verify at least:
+After required children are terminal, Sol inspects actual changes and verifies the original behavior, file ownership, absence of unrelated edits, syntax/types/tests, and relevant regressions. Do not accept a child summary as proof. Correct small errors with a focused sequential follow-up using the same Luna routing; keep broad uncertainty or major design decisions with Sol. Immediately before finalizing, confirm no child spawned for this request remains running and report actual wave sizes plus any capacity fallback.
 
-- The result satisfies the original request and expected behavior.
-- Changes follow repository conventions and contain no unnecessary edits.
-- Other modules and contracts are not unintentionally affected.
-- Syntax, types, tests, and relevant checks pass.
-- There is no evident regression.
-
-Run proportionate final verification yourself. Do not accept the subagent's summary as proof.
-
-If Luna's result has a small error, lacks context, or followed an unclear instruction, send a focused correction with `followup_task` or create a new Luna Max task using the same explicit routing. If the failure reveals broad architecture work, cross-subsystem uncertainty, or a major design decision, have Sol take over instead of repeatedly asking Luna to guess.
-
-## Context and Quota Discipline
-
-Use this flow:
+## Operating Shape
 
 ```text
-User -> Sol Medium -> understand full context -> extract bounded task
-     -> compact task brief -> Luna Max -> implement/test/investigate
-     -> Sol Medium -> review/integrate/final verification
+User -> Sol Medium -> bounded task briefs
+     -> successive waves of 1-3 independent Luna Max children
+     -> wait for required results -> Sol review/integration/final verification
 ```
 
-The compact handoff is part of the skill's purpose: it reduces unnecessary Sol implementation work without spending child context on full conversation history.
+The compact handoff prevents irrelevant discovery and overlapping Sol implementation while preserving Luna Max's focused execution.
