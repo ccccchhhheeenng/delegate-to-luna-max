@@ -7,6 +7,10 @@ description: Use for non-trivial repository work with independent, bounded imple
 
 The current primary agent is the higher-capability orchestrator for this workflow. It owns decomposition, high-risk decisions, integration, and final verification. Apply the workflow without checking or claiming a specific primary model or reasoning effort. This skill does not change the active primary model; explicitly route only the delegated work to Luna Max.
 
+## Explicit Workflow Precedence
+
+If the user explicitly invokes `$luna-task-owner`, do not apply this workflow to the same task even when project or global instructions caused this skill to load. The explicit skill owns that turn. Return to this workflow only when the user explicitly selects `$delegate-to-luna-max`, or after the task-owner workflow reports that the task is ineligible and the user chooses the standard workflow.
+
 ## Discovery and Always-On Use
 
 Implicit skill invocation is heuristic: a clear description improves selection but does not guarantee this file loads for every task. Keep `policy.allow_implicit_invocation: true` in `agents/openai.yaml`. When the user wants this workflow considered in every new Codex run, add a short global `$CODEX_HOME/AGENTS.md` instruction that tells Codex to read this `SKILL.md` before non-trivial repository work. Keep the full workflow here rather than duplicating it in `AGENTS.md`.
