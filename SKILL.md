@@ -1,6 +1,6 @@
 ---
 name: delegate-to-luna-max
-description: Use for non-trivial repository work with independent, bounded implementation, tests, debugging, refactoring, documentation, or focused investigation. The primary agent delegates suitable work to GPT-5.6 Luna at max reasoning with compact context, waits for required results, then reviews. Skip trivial, ambiguous, tightly coupled, architecture-wide, and high-risk work.
+description: Use for non-trivial repository work with independent, bounded implementation, tests, debugging, refactoring, documentation, or focused investigation. The primary agent delegates suitable work to GPT-6 Luna at max reasoning with compact context, waits for required results, then reviews. Skip trivial, ambiguous, tightly coupled, architecture-wide, and high-risk work.
 ---
 
 # Delegate to Luna Max
@@ -87,7 +87,7 @@ Inspect the live `spawn_agent` schema and use its exact parameter names. For eve
 
 ```text
 fork_turns="none"
-model="gpt-5.6-luna"
+model="gpt-6-luna"
 reasoning_effort="max"
 ```
 
