@@ -9,6 +9,8 @@ The current primary agent is the higher-capability orchestrator for this workflo
 
 ## Explicit Workflow Precedence
 
+If the user explicitly invokes `$delegate-to-luna-adaptive`, do not apply this workflow to the same task even when project or global instructions caused this skill to load. The adaptive workflow owns that turn.
+
 If the user explicitly invokes `$luna-task-owner`, do not apply this workflow to the same task even when project or global instructions caused this skill to load. The explicit skill owns that turn. Return to this workflow only when the user explicitly selects `$delegate-to-luna-max`, or after the task-owner workflow reports that the task is ineligible and the user chooses the standard workflow.
 
 ## Discovery and Always-On Use
