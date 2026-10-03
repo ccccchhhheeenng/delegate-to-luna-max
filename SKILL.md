@@ -1,89 +1,78 @@
 ---
 name: delegate-to-luna-max
-description: Use for non-trivial repository work with independent, bounded implementation, tests, debugging, refactoring, documentation, or focused investigation. The primary agent delegates suitable work to GPT-6 Luna at max reasoning with compact context, waits for required results, then reviews. Skip trivial, ambiguous, tightly coupled, architecture-wide, and high-risk work.
+description: Delegate ordinary bounded non-trivial repository implementation, tests, debugging, refactoring, documentation, or investigation to GPT-6 Luna at max reasoning. Use compact briefs, joined results, and evidence-based review. Keep unclear requirements, consequential decisions, tightly coupled, and high-risk work with the primary agent.
 ---
 
 # Delegate to Luna Max
 
-The current primary agent is the higher-capability orchestrator for this workflow. It owns decomposition, high-risk decisions, integration, and final verification. Apply the workflow without checking or claiming a specific primary model or reasoning effort. This skill does not change the active primary model; explicitly route only the delegated work to Luna Max.
+The primary agent scopes requirements, risk, relevant files, acceptance, and boundaries, then hands ordinary bounded non-trivial work to Luna before detailed diagnosis. Luna is the preferred executor and may choose a suitable local pattern or diagnose and fix within one boundary. The primary keeps unclear requirements, consequential decisions, integration, and acceptance. Route Luna explicitly at `max`.
 
-## Explicit Workflow Precedence
+## Select the workflow
 
-If the user explicitly invokes `$delegate-to-luna-adaptive`, do not apply this workflow to the same task even when project or global instructions caused this skill to load. The adaptive workflow owns that turn.
+Use this workflow automatically when its delegation criteria are met. Preserve `policy.allow_implicit_invocation: true`. An explicit user choice of another delegation workflow takes precedence for the same task; do not combine workflows. Merely mentioning, comparing, or editing a skill does not invoke its workflow.
 
-If the user explicitly invokes `$luna-task-owner`, do not apply this workflow to the same task even when project or global instructions caused this skill to load. The explicit skill owns that turn. Return to this workflow only when the user explicitly selects `$delegate-to-luna-max`, or after the task-owner workflow reports that the task is ineligible and the user chooses the standard workflow.
+## Spend less on coordination
 
-## Discovery and Always-On Use
+Prefer one child for a bundled deliverable. At most three Luna children may be active concurrently for this task, counting every child role including verifiers. Choose one, two, or three only when each lane has independent useful work and disjoint files or resources; this is a ceiling, never a quota. Parallelism can increase total usage, so bundle related edits and targeted checks instead of splitting investigator, writer, and tester roles. Avoid speculative OPTIONAL lanes and routine review agents.
 
-Implicit skill invocation is heuristic: a clear description improves selection but does not guarantee this file loads for every task. Keep `policy.allow_implicit_invocation: true` in `agents/openai.yaml`. When the user wants this workflow considered in every new Codex run, add a short global `$CODEX_HOME/AGENTS.md` instruction that tells Codex to read this `SKILL.md` before non-trivial repository work. Keep the full workflow here rather than duplicating it in `AGENTS.md`.
+Keep briefs around 150-250 words and ordinary returns within 150 words when sufficient; never omit required boundaries or evidence to meet these targets. Send paths, relevant symbols, and changed facts rather than whole files, logs, skills, or repeated history. Batch independent scoped reads; reuse current evidence instead of rediscovering it. Store long logs in artifacts and return only outcomes, relevant errors, and paths.
 
-## Decide Whether to Delegate
+## Delegate only useful, bounded work
 
-Delegate only independent, bounded work with observable success criteria when coordination costs less than doing it directly. Handle trivial, ambiguous, tightly coupled, architecture-wide, security-critical, or high-risk work in the primary agent. Keep the workflow one level deep; Luna must not spawn another subagent unless the user explicitly requests nested delegation.
+Delegate ordinary bounded non-trivial work by default when its goal and acceptance can be stated compactly, including short, straightforward implementation, tests, documentation, and safe investigation. Skip only truly trivial work when the full coordination cost exceeds its benefit. Keep unclear requirements, consequential architecture decisions, high-risk or irreversible actions, and tightly coupled work with the primary agent; safe bounded evidence-gathering toward those decisions may still go to Luna. An explicit request to use Luna does not remove scope or safety boundaries.
 
-Plan small successive waves. Each child gets one primary deliverable, an explicit scope, and a required or optional result label. A wave may contain up to three Luna Max agents, but use fewer when there are fewer truly independent tasks, when sequencing is safer, or when fewer child slots are available. Never spawn three merely to fill capacity. Compute the wave size from the independent task count and available child slots (the configured child-slot limit excludes the primary agent), capped at three. If capacity is below three, degrade to the available capacity and explicitly report that limitation; never claim that three agents ran.
+Work in small successive waves within the three-child task cap and live available capacity. Read the tool's capacity semantics: a total-agent limit includes the primary agent; a child-only limit does not. Queue excess work. Never fill slots without independent useful work.
 
-Parallel writing is allowed only with explicitly disjoint file ownership in every brief. Tasks that depend on one another, touch the same file, or require a shared mutable artifact run sequentially. Do not ask a child to gather unrelated repository context or perform a broad scan. Suitable tasks include a well-specified function/config option, focused tests, a mechanical refactor, a targeted symbol/API investigation, or focused documentation.
+Before assigning writers, record existing changes using a scoped Git diff/status or file snapshots outside Git. Give parallel writers disjoint files and mutable resources; shared files, generated artifacts, services, and dependent tasks require sequencing. The primary agent may continue independent work, but must not duplicate a child's investigation, edits, or checks.
 
-## Build a Compact Task Brief
+## Bound decisions before execution
 
-The primary agent reads enough authoritative context to define the boundaries, then sends only the minimum context needed. Use exact paths rather than a repository-wide directory when possible. Every brief must contain all of these fields:
+For implementation, the primary agent supplies fixed requirements, acceptance criteria, safety boundaries, known relevant files, and any helpful local reference; it does not need to choose every implementation detail. Hand off before detailed diagnosis or solving. Luna may inspect the allowed files, use the first local pattern that fits, and combine diagnosis and repair within one explicit boundary. Keep unresolved user requirements and consequential architecture or risk decisions with the primary agent; Luna may gather bounded evidence and return it before crossing those decisions. Use a separate investigation lane only when its question and evidence are independently useful or a primary-owned decision must be made before implementation.
+
+Apply these defaults unless the brief justifies a different limit:
+
+- Follow the first existing pattern that meets acceptance. Do not compare alternatives, redesign abstractions, or reopen settled choices without contradictory evidence. If the chosen approach conflicts with correctness or safety, report the conflict instead of following it blindly.
+- Investigations assess at most two evidence-backed hypotheses. Each further read must answer a named unresolved question within Allowed reads; stop discovery once enough evidence supports the assigned result. Report remaining uncertainty when the search limit is reached.
+- After a failed assigned check, allow one focused repair by the same child and rerun the affected check once when the work remains safe and bounded; prefer this over primary takeover for convenience. If still failing, return the partial result and failure evidence; the primary agent chooses the next step under existing retry limits.
+- Reopen a decision only for a new requirement, concrete contradictory evidence, or a failed check. Record hypothetical concerns briefly; they do not authorize more work. Material uncertainty blocking acceptance returns BLOCKED, never DONE.
+
+These are observable workflow limits, not enforceable caps on internal reasoning tokens or elapsed time. High effort does not authorize additional scope. Once acceptance and assigned checks pass, return immediately.
+
+## Give a compact brief
+
+Read only enough authoritative context to set the boundary, then let Luna perform the scoped work. Use this brief, merging fields when that removes repetition:
 
 ```text
-Goal:
-<one primary deliverable>
-
-Relevant files:
-<exact files or narrowly scoped directories>
-
-Context:
-<minimum architecture context required>
-
-Allowed reads:
-<exact paths, commands, or data sources>
-
-Allowed writes:
-<exact files this child owns, or "none" for read-only work>
-
-Do not:
-<files, systems, actions, or scope that are prohibited>
-
-Scope expansion gate:
-If the work needs anything outside Allowed reads or Allowed writes, stop and return BLOCKED with the missing scope and reason. Do not explore, infer permission, or modify beyond scope.
-
-File ownership:
-<exclusive write ownership; state "read-only" when applicable>
-
-Expected result:
-<observable behavior or findings>
-
-Stop when:
-<the expected result is reached and the specified verification is complete; report immediately rather than extending the task>
-
-Verification:
-<specific tests, commands, or checks to run; state any justified conditions for additional checks>
-
-Result priority:
-REQUIRED | OPTIONAL
+Goal: one deliverable and observable acceptance criteria
+Context: exact relevant paths and existing/concurrent changes
+Decisions: fixed requirements; allowed local choices; optional known reference; decisions reserved for the primary agent; or one bounded investigation question
+Allowed reads: bounded paths, dependencies, commands, or sources
+Allowed writes: exclusively owned files/resources, or none
+Boundaries: prohibited actions; preserve others' changes; no nested delegation
+Stop/budget: acceptance met and assigned checks complete; bounded search/check scope; report BLOCKED when exhausted
+Checks: specific checks, one owner per check, and mandatory requirements
+Dependencies: prerequisite results, or none; REQUIRED unless explicitly OPTIONAL
 ```
 
-Do not include unrelated chat history. Once the stop condition is met, the child reports without adding refactors, tests, or investigation. After specified checks pass, broaden verification only for a failed check or a concrete new risk within Allowed reads; explain why in the return. A child must return only this fixed contract after its work and checks (use `none` when a field is empty):
+Choose a useful read boundary, including known local dependencies and applicable instructions, without authorizing a repository-wide scan. If additional access or an ownership conflict is needed, the child returns `BLOCKED` with the path/action and reason. The primary agent may amend the brief within the user's authorized scope; ask the user only for genuinely missing authority or requirements.
+
+Children must preserve pre-existing and concurrent changes, never revert others' work, and never spawn agents unless the user explicitly authorizes nested delegation. Stop after the deliverable and assigned checks; no opportunistic cleanup or open-ended verification.
+
+Require a concise, evidence-backed return:
 
 ```text
 Status: DONE | DONE_WITH_CONCERNS | BLOCKED | FAILED
-Changed files: <paths or none>
-Behavior implemented or Findings: <summary>
-Tests/checks run: <commands and outcomes>
-Assumptions: <assumptions or none>
-Unresolved issues: <issues or none>
-Evidence: <paths, commands, outputs, or hashes>
+Files: changed paths or none
+Result: behavior or findings
+Checks: command, outcome, and relevant artifact/output; or none
+Concern: unresolved issue, assumption, missing scope, or none
 ```
 
-Use `DONE_WITH_CONCERNS` when the deliverable and verification are complete but a specific doubt remains. State that doubt under Unresolved issues and let the primary agent decide whether more work is needed; do not investigate it indefinitely. Use `BLOCKED` when the deliverable cannot be completed within the brief.
+`DONE_WITH_CONCERNS` means the deliverable and assigned checks are complete with a specific residual concern. Missing mandatory checks or incomplete acceptance cannot be labeled `DONE`; return `BLOCKED` or `FAILED` with the partial result. A completed investigation may report an unresolved finding.
 
-## Spawn Luna Max Correctly
+## Route explicitly
 
-Inspect the live `spawn_agent` schema and use its exact parameter names. For every Luna delegation, explicitly set:
+Inspect the live collaboration schema and set:
 
 ```text
 fork_turns="none"
@@ -91,26 +80,26 @@ model="gpt-6-luna"
 reasoning_effort="max"
 ```
 
-Never omit `fork_turns` and never use `fork_turns="all"`. Use `fork_turns="none"` for Luna by default. A limited positive integer string such as `"1"`, `"2"`, or `"3"` is allowed only when a specific small amount of recent context is genuinely necessary and cannot be expressed cleanly in the compact brief. A parallel writer must receive a non-overlapping ownership list. If a required override is unavailable or spawning fails, do not retry with an inherited-model subagent or a full-history fork; disclose that Luna Max delegation did not occur and let the primary agent take over.
+Use a small positive history fork only when essential recent context cannot be expressed in the brief and the tool supports explicit overrides with it. Never use a full-history fork or omit the model/effort. If routing is unavailable, disclose it and do the work in the primary agent; do not substitute an inherited-model child.
 
-## Wait for Waves
+On capacity or transient rate-limit failure, wait for capacity or the indicated retry window before one retry with the same routing. For unsupported parameters/model, do not retry blindly. Track the actual child id, ownership, priority, and status. Tool acceptance confirms the requested routing; when actual model execution must be proven, use available runtime metadata, not a child's self-description.
 
-Every spawned child is joined work, not fire-and-forget. Record its task identifier and whether the result is REQUIRED or OPTIONAL. The primary agent must not implement overlapping work while any child in that scope is running. Wait for every REQUIRED result to reach a terminal state before reviewing, integrating, starting a dependent wave, or sending the final response. OPTIONAL work never silently becomes required; if it is not needed, cancel or drop it explicitly and ensure no child remains running before finalizing.
+## Join and recover
 
-Use the live collaboration status/wait tools. A timeout is only a progress checkpoint: inspect status and continue waiting while a required child is active. If a child is taking much longer than its bounded task suggests, check its live status and available thread activity or work artifacts before drawing conclusions. Silence alone does not mean it is stuck. If progress is still unclear, send one short, non-interrupting message asking what it has completed, what it is doing now, and whether it is blocked; ask it to continue within the original scope. Give it time to reach a message boundary and reply. Avoid repeated pings or overlapping investigation. Do not interrupt a child merely because it is slow.
+Every child is joined work. Review a completed lane and release its dependent work as soon as its prerequisites are terminal and accepted, provided remaining active lanes have disjoint files/resources. Do not impose an all-wave barrier on unrelated work. A progress message or timeout is not completion. Prefer event-driven waits over repeated polling; use bounded waits compatible with user updates. Inspect status only when completion or ownership is unclear. Silence alone does not justify interruption.
 
-If the child appears to be expanding into low-value work, send a focused, non-interrupting course correction that restates the deliverable, scope, and stopping condition. Do not request a new task or broaden its permissions. If a child requests clarification, reports a recoverable issue, or reaches BLOCKED, send a focused follow-up only within the original scope; otherwise let the primary agent take over. If the user cancels or replaces the work, interrupt affected children when supported.
+If progress is unclear after checking available status/activity, send one non-interrupting message requesting completed work, current work, and blockers, or correcting scope drift. Allow a response at a message boundary. Do not repeat pings or interrupt solely for slowness.
 
-## Review and Integrate
+Use `send_message` to steer a running child. For an idle/terminal child needing another turn, use `followup_task` or the live equivalent that starts a turn; a message alone may not restart it. Keep follow-ups within an explicit brief. For a recoverable block, revise the brief and retry only the unfinished work once, preferably with the same child when safe and bounded and within existing retry limits. If the same cause recurs, the primary agent takes over.
 
-After required children are terminal, the primary agent inspects actual changes and verifies the original behavior, file ownership, absence of unrelated edits, syntax/types/tests, and relevant regressions. Do not accept a child summary as proof. For `DONE_WITH_CONCERNS`, assess the stated doubt and resolve any concern that affects correctness or scope before integration. Correct small errors with a focused sequential follow-up using the same Luna routing; keep broad uncertainty or major design decisions with the primary agent. Immediately before finalizing, confirm no child spawned for this request remains running and report actual wave sizes plus any capacity fallback.
+When a child terminates without a report, inspect existing artifacts and check evidence first. Recover the missing report/check once only if needed; do not rerun completed implementation. Before taking over owned files, confirm the previous writer has stopped.
 
-## Operating Shape
+Cancel affected children if the user cancels or replaces the task. Before finalizing, collect every required result and explicitly stop any unneeded OPTIONAL work. Confirm none of this request's children remain active; a requested interruption is not itself proof they stopped.
 
-```text
-User -> primary agent -> bounded task briefs
-     -> successive waves of 1-3 independent Luna Max children
-     -> wait for required results -> primary agent review/integration/final verification
-```
+## Accept once, using evidence
 
-The compact handoff prevents irrelevant discovery and overlapping primary-agent implementation while preserving Luna Max's focused execution.
+Inspect the actual diff/artifact against the recorded starting state, acceptance criteria, ownership, and preserved user changes. Review assigned check evidence and material concerns, not just the child's summary. Use one acceptance pass by default: one artifact/diff review plus mandatory checks and the smallest check needed to establish changed behavior. Assign each check one owner. Do not reproduce the child's diagnosis or redo correct work and passing checks. Skip optional suites and independent verifiers unless a concrete unresolved correctness concern justifies them; any verifier counts toward the three-child cap.
+
+Do not repeat passing checks unless later edits invalidate them, evidence is missing, or a specific unresolved risk warrants it. Required user/repository checks still apply. Repair correctness and scope issues before claiming completion; disclose unavailable checks. Keep major design uncertainty with the primary agent.
+
+Briefly report the result, changed files, checks and limitations, and actual child count/effort. Mention retries or capacity fallback only if they occurred. Do not claim measured speed or token savings without evidence.
