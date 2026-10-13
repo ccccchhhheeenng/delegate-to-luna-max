@@ -1,6 +1,6 @@
 ---
 name: delegate-to-luna-max
-description: Delegate ordinary bounded non-trivial repository implementation, tests, debugging, refactoring, documentation, or investigation to GPT-6 Luna at max reasoning. Use compact briefs, joined results, and evidence-based review. Keep unclear requirements, consequential decisions, tightly coupled, and high-risk work with the primary agent.
+description: When explicitly requested, delegate ordinary bounded non-trivial repository implementation, tests, debugging, refactoring, documentation, or investigation to GPT-6 Luna at max reasoning. Use compact briefs, joined results, and evidence-based review. Keep unclear requirements, consequential decisions, tightly coupled, and high-risk work with the primary agent.
 ---
 
 # Delegate to Luna Max
@@ -9,7 +9,7 @@ The primary agent scopes requirements, risk, relevant files, acceptance, and bou
 
 ## Select the workflow
 
-Use this workflow automatically when its delegation criteria are met. Preserve `policy.allow_implicit_invocation: true`. An explicit user choice of another delegation workflow takes precedence for the same task; do not combine workflows. Merely mentioning, comparing, or editing a skill does not invoke its workflow.
+Use this workflow only when explicitly requested. Preserve `policy.allow_implicit_invocation: false`. An explicit invocation selects this workflow for the task over the automatic Adaptive workflow; do not combine workflows. Merely mentioning, comparing, or editing a skill does not invoke its workflow. A later explicit user selection controls the affected work.
 
 ## Spend less on coordination
 

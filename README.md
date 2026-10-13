@@ -4,7 +4,7 @@
 
 ## 使用方式
 
-此 skill 允許自動選用，但自動判斷不保證每次都會觸發。要明確使用，可在要求中加入 `$delegate-to-luna-max`：
+此 skill 需要明確指定，不會自動啟用。在要求中加入 `$delegate-to-luna-max` 後，同一份工作會使用 Max 流程，取代預設的 Adaptive 流程：
 
 ```text
 $delegate-to-luna-max
@@ -24,7 +24,7 @@ $delegate-to-luna-max
 
 預設由主代理檢查一次實際差異與必要證據，搭配使用者、專案要求的檢查，以及確認變更行為所需的最小檢查。已通過的檢查只在後續修改影響結果、證據不足或存在具體風險時重跑。
 
-本版本沒有 Adaptive 的 `verification=` 或 `effort=` 選項解析規則。需要按工作調整推理強度或指定驗證模式，可使用 [Delegate to Luna Adaptive](https://github.com/ccccchhhheeenng/delegate-to-luna-adaptive)。
+本版本沒有 Adaptive 的 `verification=` 或 `think=` 選項解析規則。預設允許自動選用的 [Delegate to Luna Adaptive](https://github.com/ccccchhhheeenng/delegate-to-luna-adaptive) 可按工作調整推理強度範圍或指定驗證模式。
 
 ## 安裝與更新
 

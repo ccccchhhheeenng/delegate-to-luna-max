@@ -3,4 +3,4 @@ interface:
   short_description: "Delegate bounded implementation work to Luna Max"
 
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false
